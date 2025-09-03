@@ -1,19 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>n8n AI Chatbot Side Panel</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-  <div id="chat-container">
-    <div id="chat-window"></div>
-    <div id="input-container">
-      <input type="text" id="user-input" placeholder="Type your message...">
-      <button id="send-button">Send</button>
-      <button id="clear-button">Clear Chat</button>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>n8n AI Chatbot</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="chat-container">
+      <header id="chat-header">
+        <h1>n8n AI Chatbot</h1>
+        <button id="clear-button" title="Clear Chat History">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </header>
+      <div id="chat-window">
+        </div>
+      <form id="input-form">
+        <input type="text" id="user-input" placeholder="Ask me anything..." />
+        <button type="submit" id="send-button" title="Send Message">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </form>
     </div>
-  </div>
-  <script src="sidepanel.js"></script>
-</body>
+    <script src="sidepanel.js"></script>
+  </body>
 </html>

@@ -1,17 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
   const chatWindow = document.getElementById('chat-window');
+  const inputForm = document.getElementById('input-form'); // Get the form element
   const userInput = document.getElementById('user-input');
-  const sendButton = document.getElementById('send-button');
   const clearButton = document.getElementById('clear-button');
 
   // Replace with your n8n webhook URL
   const webhookUrl = 'https://n8n-service-jo3m.onrender.com/webhook/extchrome';
-
-  // Add basic auth if needed (uncomment and replace user:password)
-  // const authHeader = 'Basic ' + btoa('user:password');
-
-  // Clear chat window on initial load
-  chatWindow.innerHTML = '';
 
   // Add message to chat window
   function addMessageToChat(text, sender) {
@@ -25,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load initial chat history
   chrome.storage.local.get(['chatHistory'], (result) => {
     if (result.chatHistory) {
-      result.chatHistory.forEach(message => {
+      result.chatHistory.forEach((message) => {
         addMessageToChat(message.text, message.sender);
       });
     }
@@ -35,9 +29,10 @@ document.addEventListener('DOMContentLoaded', () => {
   chrome.storage.onChanged.addListener((changes, namespace) => {
     if (namespace === 'local' && changes.chatHistory) {
       const newHistory = changes.chatHistory.newValue || [];
-      // Only add new messages not already displayed
-      const existingMessages = Array.from(chatWindow.querySelectorAll('.message')).map(div => div.textContent);
-      newHistory.forEach(message => {
+      const existingMessages = Array.from(
+        chatWindow.querySelectorAll('.message')
+      ).map((div) => div.textContent);
+      newHistory.forEach((message) => {
         if (!existingMessages.includes(message.text)) {
           addMessageToChat(message.text, message.sender);
         }
@@ -50,7 +45,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const message = userInput.value.trim();
     if (!message) return;
 
-    // Display user message
     addMessageToChat(message, 'user');
     userInput.value = '';
 
@@ -59,22 +53,24 @@ document.addEventListener('DOMContentLoaded', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Uncomment and add authHeader if basic auth is enabled
-          // 'Authorization': authHeader
         },
-        body: JSON.stringify({ message })
+        body: JSON.stringify({ message }),
       });
 
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+      if (!response.ok)
+        throw new Error(`HTTP error! Status: ${response.status}`);
 
       const data = await response.json();
       const botReply = data.output || 'No response from AI';
       addMessageToChat(botReply, 'bot');
 
-      // Save to chat history
       chrome.storage.local.get(['chatHistory'], (result) => {
         const chatHistory = result.chatHistory || [];
-        if (!chatHistory.some(msg => msg.text === message && msg.sender === 'user')) {
+        if (
+          !chatHistory.some(
+            (msg) => msg.text === message && msg.sender === 'user'
+          )
+        ) {
           chatHistory.push({ text: message, sender: 'user' });
           chatHistory.push({ text: botReply, sender: 'bot' });
           chrome.storage.local.set({ chatHistory });
@@ -93,9 +89,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Event listeners
-  sendButton.addEventListener('click', sendMessage);
-  userInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') sendMessage();
+  inputForm.addEventListener('submit', (e) => {
+    e.preventDefault(); // Prevent the default form submission
+    sendMessage();
   });
   clearButton.addEventListener('click', clearChat);
 });
