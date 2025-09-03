@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Function to create a clickable link from a URL
   function createClickableLinks(text) {
-    const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
+    const urlRegex = /(https?:\/\/[^\s()]+|\bwww\.[^\s()]+)/g;
     return text.replace(urlRegex, (url) => {
       // Ensure the URL has a protocol
       const fullUrl = url.startsWith('http') ? url : `http://${url}`;
@@ -23,16 +23,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Add message to chat window
+  // Add message to chat window with enhanced formatting
   function addMessageToChat(text, sender) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${sender}-message`;
-    const senderLabel = sender === 'user' ? 'User' : 'Jarvis';
-    
-    // Apply the link conversion to the message text
-    const formattedText = createClickableLinks(text);
+    const senderLabel = sender === 'user' ? 'User' : 'Tony';
 
-    messageDiv.innerHTML = `<strong>${senderLabel}:</strong><br>${formattedText}`;
+    let formattedContent = '';
+    const lines = text.split('\n');
+    lines.forEach(line => {
+      // Check if the line contains a colon to bold the key
+      const colonIndex = line.indexOf(':');
+      if (colonIndex !== -1) {
+        const key = line.substring(0, colonIndex);
+        const value = line.substring(colonIndex + 1);
+        formattedContent += `<strong>${key}:</strong>${value}<br>`;
+      } else {
+        formattedContent += `${line}<br>`;
+      }
+    });
+
+    // Apply the link conversion to the formatted text
+    const finalFormattedText = createClickableLinks(formattedContent);
+
+    messageDiv.innerHTML = `<strong>${senderLabel}:</strong><br>${finalFormattedText}`;
     chatWindow.appendChild(messageDiv);
     chatWindow.scrollTop = chatWindow.scrollHeight;
   }
@@ -53,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const existingMessages = Array.from(chatWindow.querySelectorAll('.message')).map(div => div.innerHTML);
 
       newHistory.forEach(message => {
-        const messageText = `<strong>${message.sender === 'user' ? 'User' : 'Jarvis'}:</strong><br>${createClickableLinks(message.text)}`;
+        const messageText = `<strong>${message.sender === 'user' ? 'User' : 'Tony'}:</strong><br>${createClickableLinks(message.text)}`;
         if (!existingMessages.some(html => html.includes(messageText))) {
           addMessageToChat(message.text, message.sender);
         }

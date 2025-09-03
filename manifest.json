@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "n8n AI Chatbot",
-  "version": "1.0",
-  "description": "A Chrome extension with a side panel to interact with an n8n AI chatbot and scrape token addresses from Axiom Trade meme token pages.",
+  "name": "Tony Bags Companion - Prototype",
+  "version": "0.1",
+  "description": "Tony is an AI companion powered by Gemini(for now) tailored for BagsApp traders.",
   "permissions": ["activeTab", "storage", "sidePanel", "scripting", "tabs", "webNavigation"],
   "host_permissions": ["https://n8n-service-jo3m.onrender.com/", "https://axiom.trade/*"],
   "background": {
