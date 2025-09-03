@@ -60,60 +60,76 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Listen for storage changes (e.g., from content.js)
+  // Listen for storage changes from other parts of the extension (like content.js)
   chrome.storage.onChanged.addListener((changes, namespace) => {
     if (namespace === 'local' && changes.chatHistory) {
       const newHistory = changes.chatHistory.newValue || [];
-      const existingMessages = Array.from(chatWindow.querySelectorAll('.message')).map(div => div.innerHTML);
+      const currentMessages = Array.from(chatWindow.querySelectorAll('.message'));
+      const lastMessage = currentMessages.length > 0 ? currentMessages[currentMessages.length - 1] : null;
 
-      newHistory.forEach(message => {
-        const messageText = `<strong>${message.sender === 'user' ? 'User' : 'Tony'}:</strong><br>${createClickableLinks(message.text)}`;
-        if (!existingMessages.some(html => html.includes(messageText))) {
-          addMessageToChat(message.text, message.sender);
-        }
-      });
+      // Find the index of the last displayed message in the new history
+      let lastIndex = -1;
+      if (lastMessage) {
+        const lastSender = lastMessage.classList.contains('user-message') ? 'user' : 'bot';
+        // A simple text match is more reliable than an HTML check
+        const lastText = lastMessage.textContent.split(':').slice(1).join(':').trim();
+        lastIndex = newHistory.findIndex(msg => msg.text.trim() === lastText && msg.sender === lastSender);
+      }
+
+      // Add messages from the new history that are not yet displayed
+      for (let i = lastIndex + 1; i < newHistory.length; i++) {
+        const message = newHistory[i];
+        addMessageToChat(message.text, message.sender);
+      }
     }
   });
+
 
   // Send message to n8n webhook
   async function sendMessage() {
     const message = userInput.value.trim();
     if (!message) return;
 
-    // Display user message
+    // Display user message immediately
     addMessageToChat(message, 'user');
     userInput.value = '';
 
-    try {
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Uncomment and add authHeader if basic auth is enabled
-          // 'Authorization': authHeader
-        },
-        body: JSON.stringify({ message })
-      });
+    // Get current history to append new messages
+    chrome.storage.local.get(['chatHistory'], async (result) => {
+      let chatHistory = result.chatHistory || [];
+      chatHistory.push({ text: message, sender: 'user' });
 
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+      try {
+        const response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            // Uncomment and add authHeader if basic auth is enabled
+            // 'Authorization': authHeader
+          },
+          body: JSON.stringify({ message })
+        });
 
-      const data = await response.json();
-      const botReply = data.output || 'No response from AI';
-      addMessageToChat(botReply, 'bot');
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
-      // Save to chat history
-      chrome.storage.local.get(['chatHistory'], (result) => {
-        const chatHistory = result.chatHistory || [];
-        if (!chatHistory.some(msg => msg.text === message && msg.sender === 'user')) {
-          chatHistory.push({ text: message, sender: 'user' });
-          chatHistory.push({ text: botReply, sender: 'bot' });
-          chrome.storage.local.set({ chatHistory });
-        }
-      });
-    } catch (error) {
-      addMessageToChat('Error: Could not connect to AI', 'bot');
-      console.error('Error sending message to webhook:', error.message);
-    }
+        const data = await response.json();
+        const botReply = data.output || 'No response from AI';
+
+        // Add the bot's reply to the in-memory history and the UI
+        chatHistory.push({ text: botReply, sender: 'bot' });
+        addMessageToChat(botReply, 'bot');
+
+        // Save the updated history to storage
+        chrome.storage.local.set({ chatHistory });
+
+      } catch (error) {
+        const errorMessage = 'Error: Could not connect to AI';
+        addMessageToChat(errorMessage, 'bot');
+        chatHistory.push({ text: errorMessage, sender: 'bot' });
+        chrome.storage.local.set({ chatHistory });
+        console.error('Error sending message to webhook:', error.message);
+      }
+    });
   }
 
   // Clear chat history
