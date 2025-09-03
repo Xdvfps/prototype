@@ -13,16 +13,14 @@
 
 /* Base styles and container setup */
 body {
-  width: 350px; /* Inherited from your original CSS */
-  height: 600px; /* Inherited from your original CSS */
+  width: 350px;
+  height: 600px;
+  margin: 0;
   font-family: 'Roboto', sans-serif;
   font-size: 14px;
-  margin: 0;
-  padding: 0;
   background-color: var(--background-color);
   color: var(--text-color);
   overflow: hidden;
-  position: relative;
 }
 
 #chat-container {
@@ -33,6 +31,7 @@ body {
   box-shadow: 0 4px 12px var(--shadow-color);
   border-radius: 8px;
   overflow: hidden;
+  position: relative;
 }
 
 /* Header and controls */

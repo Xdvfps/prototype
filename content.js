@@ -33,6 +33,8 @@
     }
     hasSentRequest = true;
 
+    const message = `Jarvis who created this token and how much lifetime fees did it generate? ${tokenAddress}`;
+
     try {
       const response = await fetch(webhookUrl, {
         method: 'POST',
@@ -41,7 +43,7 @@
           // Uncomment and add authHeader if basic auth is enabled
           // 'Authorization': authHeader
         },
-        body: JSON.stringify({ message: tokenAddress })
+        body: JSON.stringify({ message })
       });
 
       if (!response.ok) {
@@ -52,11 +54,10 @@
       const botReply = data.output || 'No response from AI';
       console.log('Webhook response:', botReply);
 
-      // Send response to side panel via storage
+      // Send only bot reply to side panel via storage
       chrome.storage.local.get(['chatHistory'], (result) => {
         const chatHistory = result.chatHistory || [];
-        if (!chatHistory.some(msg => msg.text === tokenAddress && msg.sender === 'user')) {
-          chatHistory.push({ text: tokenAddress, sender: 'user' });
+        if (!chatHistory.some(msg => msg.text === botReply && msg.sender === 'bot')) {
           chatHistory.push({ text: botReply, sender: 'bot' });
           chrome.storage.local.set({ chatHistory });
         }

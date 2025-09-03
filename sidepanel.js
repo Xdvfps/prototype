@@ -1,17 +1,38 @@
 document.addEventListener('DOMContentLoaded', () => {
   const chatWindow = document.getElementById('chat-window');
-  const inputForm = document.getElementById('input-form'); // Get the form element
+  const inputForm = document.getElementById('input-form');
   const userInput = document.getElementById('user-input');
   const clearButton = document.getElementById('clear-button');
 
   // Replace with your n8n webhook URL
   const webhookUrl = 'https://n8n-service-jo3m.onrender.com/webhook/extchrome';
 
+  // Add basic auth if needed (uncomment and replace user:password)
+  // const authHeader = 'Basic ' + btoa('user:password');
+
+  // Clear chat window on initial load
+  chatWindow.innerHTML = '';
+
+  // Function to create a clickable link from a URL
+  function createClickableLinks(text) {
+    const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
+    return text.replace(urlRegex, (url) => {
+      // Ensure the URL has a protocol
+      const fullUrl = url.startsWith('http') ? url : `http://${url}`;
+      return `<a href="${fullUrl}" target="_blank">${url}</a>`;
+    });
+  }
+
   // Add message to chat window
   function addMessageToChat(text, sender) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${sender}-message`;
-    messageDiv.textContent = text;
+    const senderLabel = sender === 'user' ? 'User' : 'Jarvis';
+    
+    // Apply the link conversion to the message text
+    const formattedText = createClickableLinks(text);
+
+    messageDiv.innerHTML = `<strong>${senderLabel}:</strong><br>${formattedText}`;
     chatWindow.appendChild(messageDiv);
     chatWindow.scrollTop = chatWindow.scrollHeight;
   }
@@ -19,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load initial chat history
   chrome.storage.local.get(['chatHistory'], (result) => {
     if (result.chatHistory) {
-      result.chatHistory.forEach((message) => {
+      result.chatHistory.forEach(message => {
         addMessageToChat(message.text, message.sender);
       });
     }
@@ -29,11 +50,11 @@ document.addEventListener('DOMContentLoaded', () => {
   chrome.storage.onChanged.addListener((changes, namespace) => {
     if (namespace === 'local' && changes.chatHistory) {
       const newHistory = changes.chatHistory.newValue || [];
-      const existingMessages = Array.from(
-        chatWindow.querySelectorAll('.message')
-      ).map((div) => div.textContent);
-      newHistory.forEach((message) => {
-        if (!existingMessages.includes(message.text)) {
+      const existingMessages = Array.from(chatWindow.querySelectorAll('.message')).map(div => div.innerHTML);
+
+      newHistory.forEach(message => {
+        const messageText = `<strong>${message.sender === 'user' ? 'User' : 'Jarvis'}:</strong><br>${createClickableLinks(message.text)}`;
+        if (!existingMessages.some(html => html.includes(messageText))) {
           addMessageToChat(message.text, message.sender);
         }
       });
@@ -45,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const message = userInput.value.trim();
     if (!message) return;
 
+    // Display user message
     addMessageToChat(message, 'user');
     userInput.value = '';
 
@@ -53,24 +75,22 @@ document.addEventListener('DOMContentLoaded', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          // Uncomment and add authHeader if basic auth is enabled
+          // 'Authorization': authHeader
         },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message })
       });
 
-      if (!response.ok)
-        throw new Error(`HTTP error! Status: ${response.status}`);
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
       const data = await response.json();
       const botReply = data.output || 'No response from AI';
       addMessageToChat(botReply, 'bot');
 
+      // Save to chat history
       chrome.storage.local.get(['chatHistory'], (result) => {
         const chatHistory = result.chatHistory || [];
-        if (
-          !chatHistory.some(
-            (msg) => msg.text === message && msg.sender === 'user'
-          )
-        ) {
+        if (!chatHistory.some(msg => msg.text === message && msg.sender === 'user')) {
           chatHistory.push({ text: message, sender: 'user' });
           chatHistory.push({ text: botReply, sender: 'bot' });
           chrome.storage.local.set({ chatHistory });
@@ -90,8 +110,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Event listeners
   inputForm.addEventListener('submit', (e) => {
-    e.preventDefault(); // Prevent the default form submission
+    e.preventDefault();
     sendMessage();
   });
+
   clearButton.addEventListener('click', clearChat);
 });
